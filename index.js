@@ -6,6 +6,12 @@ const config = require("./config");
 var hookUrl;
 const baseDiscordMessage = {};
 
+const colors = {
+  good: 5168997,
+  warning: 15647573,
+  danger: 14955328
+};
+
 const postMessage = (message, callback) => {
   const body = JSON.stringify(message);
   const options = url.parse(hookUrl);
@@ -37,7 +43,7 @@ const postMessage = (message, callback) => {
 };
 
 const handleElasticBeanstalk = event => {
-  const timestamp = new Date(event.Records[0].Sns.Timestamp).getTime() / 1000;
+  const timestamp = new Date(event.Records[0].Sns.Timestamp);
   const subject =
     event.Records[0].Sns.Subject || "AWS Elastic Beanstalk Notification";
   const message = event.Records[0].Sns.Message;
@@ -63,7 +69,7 @@ const handleElasticBeanstalk = event => {
     "some instances may have deployed the new application version"
   );
 
-  let color = "good";
+  let color = colors.good;
 
   if (
     stateRed != -1 ||
@@ -75,7 +81,7 @@ const handleElasticBeanstalk = event => {
     failedQuota != -1 ||
     unsuccessfulCommand != -1
   ) {
-    color = "danger";
+    color = colors.danger;
   }
   if (
     stateYellow != -1 ||
@@ -86,23 +92,24 @@ const handleElasticBeanstalk = event => {
     abortedOperation != -1 ||
     abortedDeployment != -1
   ) {
-    color = "warning";
+    color = colors.warning;
   }
 
   const discordMessage = {
-    text: "*" + subject + "*",
-    attachments: [
+    username: "Elastic Beanstalk",
+    content: `**${subject}**`,
+    embeds: [
       {
         fields: [
           {
-            title: "Subject",
+            name: "Subject",
             value: event.Records[0].Sns.Subject,
-            short: false
+            inline: true
           },
-          { title: "Message", value: message, short: false }
+          { name: "Message", value: message }
         ],
-        color: color,
-        ts: timestamp
+        color,
+        timestamp
       }
     ]
   };
@@ -112,54 +119,53 @@ const handleElasticBeanstalk = event => {
 
 const handleCodeDeploy = event => {
   const subject = "AWS CodeDeploy Notification";
-  const timestamp = new Date(event.Records[0].Sns.Timestamp).getTime() / 1000;
+  const timestamp = event.Records[0].Sns.Timestamp;
   const snsSubject = event.Records[0].Sns.Subject;
   let message;
   const fields = [];
-  let color = "warning";
+  let color = colors.warning;
 
   try {
     message = JSON.parse(event.Records[0].Sns.Message);
 
     if (message.status === "SUCCEEDED") {
-      color = "good";
+      color = colors.good;
     } else if (message.status === "FAILED") {
-      color = "danger";
+      color = colors.danger;
     }
-    fields.push({ title: "Message", value: snsSubject, short: false });
+    fields.push({ name: "Message", value: snsSubject, inline: true });
     fields.push({
-      title: "Deployment Group",
-      value: message.deploymentGroupName,
-      short: true
+      name: "Deployment Group",
+      value: message.deploymentGroupName
     });
     fields.push({
-      title: "Application",
-      value: message.applicationName,
-      short: true
+      name: "Application",
+      value: message.applicationName
     });
     fields.push({
-      title: "Status Link",
+      name: "Status Link",
       value:
         "https://console.aws.amazon.com/codedeploy/home?region=" +
         message.region +
         "#/deployments/" +
         message.deploymentId,
-      short: false
+      inline: true
     });
   } catch (e) {
-    color = "good";
+    color = colors.good;
     message = event.Records[0].Sns.Message;
-    fields.push({ title: "Message", value: snsSubject, short: false });
-    fields.push({ title: "Detail", value: message, short: false });
+    fields.push({ name: "Message", value: snsSubject, inline: true });
+    fields.push({ name: "Detail", value: message, inline: true });
   }
 
   const discordMessage = {
-    text: "*" + subject + "*",
-    attachments: [
+    username: "Code Deploy",
+    content: `**${subject}**`,
+    embeds: [
       {
-        color: color,
+        color,
         fields: fields,
-        ts: timestamp
+        timestamp
       }
     ]
   };
@@ -169,10 +175,10 @@ const handleCodeDeploy = event => {
 
 const handleCodePipeline = event => {
   const subject = "AWS CodePipeline Notification";
-  const timestamp = new Date(event.Records[0].Sns.Timestamp).getTime() / 1000;
+  const timestamp = event.Records[0].Sns.Timestamp;
   let message;
   const fields = [];
-  let color = "warning";
+  let color = colors.warning;
   let changeType = "";
 
   try {
@@ -188,42 +194,41 @@ const handleCodePipeline = event => {
     }
 
     if (message.detail.state === "SUCCEEDED") {
-      color = "good";
+      color = colors.good;
     } else if (message.detail.state === "FAILED") {
-      color = "danger";
+      color = colors.danger;
     }
     header = message.detail.state + ": CodePipeline " + changeType;
-    fields.push({ title: "Message", value: header, short: false });
+    fields.push({ name: "Message", value: header, inline: true });
     fields.push({
-      title: "Pipeline",
-      value: message.detail.pipeline,
-      short: true
+      name: "Pipeline",
+      value: message.detail.pipeline
     });
-    fields.push({ title: "Region", value: message.region, short: true });
+    fields.push({ name: "Region", value: message.region });
     fields.push({
-      title: "Status Link",
+      name: "Status Link",
       value:
         "https://console.aws.amazon.com/codepipeline/home?region=" +
         message.region +
         "#/view/" +
         message.detail.pipeline,
-      short: false
+      inline: true
     });
   } catch (e) {
-    color = "good";
+    color = colors.good;
     message = event.Records[0].Sns.Message;
     header = message.detail.state + ": CodePipeline " + message.detail.pipeline;
-    fields.push({ title: "Message", value: header, short: false });
-    fields.push({ title: "Detail", value: message, short: false });
+    fields.push({ name: "Message", value: header, inline: true });
+    fields.push({ name: "Detail", value: message, inline: true });
   }
 
   const discordMessage = {
-    text: "*" + subject + "*",
-    attachments: [
+    content: `**${subject}**`,
+    embeds: [
       {
-        color: color,
+        color,
         fields: fields,
-        ts: timestamp
+        timestamp
       }
     ]
   };
@@ -234,10 +239,10 @@ const handleCodePipeline = event => {
 const handleElasticache = event => {
   const subject = "AWS ElastiCache Notification";
   const message = JSON.parse(event.Records[0].Sns.Message);
-  const timestamp = new Date(event.Records[0].Sns.Timestamp).getTime() / 1000;
+  const timestamp = event.Records[0].Sns.Timestamp;
   const region = event.Records[0].EventSubscriptionArn.split(":")[3];
   let eventname, nodename;
-  const color = "good";
+  const color = colors.good;
 
   for (key in message) {
     eventname = key;
@@ -245,33 +250,33 @@ const handleElasticache = event => {
     break;
   }
   const discordMessage = {
-    text: "*" + subject + "*",
-    attachments: [
+    content: `**${subject}**`,
+    embeds: [
       {
-        color: color,
+        color,
         fields: [
-          { title: "Event", value: eventname.split(":")[1], short: true },
-          { title: "Node", value: nodename, short: true },
+          { name: "Event", value: eventname.split(":")[1] },
+          { name: "Node", value: nodename },
           {
-            title: "Link to cache node",
+            name: "Link to cache node",
             value:
               "https://console.aws.amazon.com/elasticache/home?region=" +
               region +
               "#cache-nodes:id=" +
               nodename +
               ";nodes",
-            short: false
+            inline: true
           }
         ],
-        ts: timestamp
+        timestamp
       }
     ]
   };
   return { ...discordMessage, ...baseDiscordMessage };
 };
 
-const handleCloudWatchEventECS = (event, context) => {
-  const timestamp = new Date(event.Records[0].Sns.Timestamp).getTime() / 1000;
+const handleCloudWatchEventECS = event => {
+  const timestamp = event.Records[0].Sns.Timestamp;
   const message = JSON.parse(event.Records[0].Sns.Message);
   const subject = "AWS CloudWatch Notification";
   const fields = [];
@@ -281,31 +286,31 @@ const handleCloudWatchEventECS = (event, context) => {
     const detailType = message["detail-type"];
     const status = message.detail.lastStatus;
 
-    let color = "danger";
+    let color = colors.danger;
 
     if (status === "RUNNING") {
-      color = "good";
+      color = colors.good;
     } else if (status === "PENDING") {
-      color = "warning";
+      color = colors.warning;
     }
 
     const container = message.detail.containers[0].name;
     const stoppedReason = message.detail.stoppedReason;
 
-    fields.push({ title: detailType, value: "", short: false });
-    fields.push({ title: "Container", value: container, short: false });
-    fields.push({ title: "Status", value: status, short: false });
+    fields.push({ name: detailType, value: ".", inline: true });
+    fields.push({ name: "Container", value: container, inline: true });
+    fields.push({ name: "Status", value: status, inline: true });
     if (stoppedReason) {
-      fields.push({ title: "Reason", value: stoppedReason, short: false });
+      fields.push({ name: "Reason", value: stoppedReason, inline: true });
     }
 
     const discordMessage = {
-      text: "*" + subject + "*",
-      attachments: [
+      content: `**${subject}**`,
+      embeds: [
         {
-          color: color,
+          color,
           fields: fields,
-          ts: timestamp
+          timestamp
         }
       ]
     };
@@ -313,12 +318,12 @@ const handleCloudWatchEventECS = (event, context) => {
     return { ...discordMessage, ...baseDiscordMessage };
   } catch (e) {
     console.log(e);
-    return handleCatchAll(event, context);
+    return handleCatchAll(event);
   }
 };
 
 const handleCloudWatch = event => {
-  const timestamp = new Date(event.Records[0].Sns.Timestamp).getTime() / 1000;
+  const timestamp = event.Records[0].Sns.Timestamp;
   const message = JSON.parse(event.Records[0].Sns.Message);
   const region = event.Records[0].EventSubscriptionArn.split(":")[3];
   const subject = "AWS CloudWatch Notification";
@@ -328,24 +333,24 @@ const handleCloudWatch = event => {
   const newState = message.NewStateValue;
   const alarmDescription = message.AlarmDescription;
   const trigger = message.Trigger;
-  const color = "warning";
+  const color = colors.warning;
 
   if (message.NewStateValue === "ALARM") {
-    color = "danger";
+    color = colors.danger;
   } else if (message.NewStateValue === "OK") {
-    color = "good";
+    color = colors.good;
   }
 
   const discordMessage = {
-    text: "*" + subject + "*",
-    attachments: [
+    content: `**${subject}**`,
+    embeds: [
       {
-        color: color,
+        color,
         fields: [
-          { title: "Alarm Name", value: alarmName, short: true },
-          { title: "Alarm Description", value: alarmDescription, short: false },
+          { name: "Alarm Name", value: alarmName },
+          { name: "Alarm Description", value: alarmDescription, inline: true },
           {
-            title: "Trigger",
+            name: "Trigger",
             value:
               trigger.Statistic +
               " " +
@@ -359,21 +364,21 @@ const handleCloudWatch = event => {
               " period(s) of " +
               trigger.Period +
               " seconds.",
-            short: false
+            inline: true
           },
-          { title: "Old State", value: oldState, short: true },
-          { title: "Current State", value: newState, short: true },
+          { name: "Old State", value: oldState },
+          { name: "Current State", value: newState },
           {
-            title: "Link to Alarm",
+            name: "Link to Alarm",
             value:
               "https://console.aws.amazon.com/cloudwatch/home?region=" +
               region +
               "#alarm:alarmFilter=ANY;name=" +
               encodeURIComponent(alarmName),
-            short: false
+            inline: true
           }
         ],
-        ts: timestamp
+        timestamp
       }
     ]
   };
@@ -383,8 +388,8 @@ const handleCloudWatch = event => {
 const handleAutoScaling = event => {
   const subject = "AWS AutoScaling Notification";
   const message = JSON.parse(event.Records[0].Sns.Message);
-  const timestamp = new Date(event.Records[0].Sns.Timestamp).getTime() / 1000;
-  const color = "good";
+  const timestamp = event.Records[0].Sns.Timestamp;
+  const color = colors.good;
 
   for (key in message) {
     eventname = key;
@@ -392,21 +397,21 @@ const handleAutoScaling = event => {
     break;
   }
   const discordMessage = {
-    text: "*" + subject + "*",
-    attachments: [
+    content: `**${subject}**`,
+    embeds: [
       {
-        color: color,
+        color,
         fields: [
           {
-            title: "Message",
+            name: "Message",
             value: event.Records[0].Sns.Subject,
-            short: false
+            inline: true
           },
-          { title: "Description", value: message.Description, short: false },
-          { title: "Event", value: message.Event, short: false },
-          { title: "Cause", value: message.Cause, short: false }
+          { name: "Description", value: message.Description, inline: true },
+          { name: "Event", value: message.Event, inline: true },
+          { name: "Cause", value: message.Cause, inline: true }
         ],
-        ts: timestamp
+        timestamp
       }
     ]
   };
@@ -416,14 +421,14 @@ const handleAutoScaling = event => {
 const handleCatchAll = event => {
   const record = event.Records[0];
   const subject = record.Sns.Subject;
-  const timestamp = new Date(record.Sns.Timestamp).getTime() / 1000;
+  const timestamp = record.Sns.Timestamp;
   const message = JSON.parse(record.Sns.Message);
-  let color = "warning";
+  let color = colors.warning;
 
   if (message.NewStateValue === "ALARM") {
-    color = "danger";
+    color = colors.danger;
   } else if (message.NewStateValue === "OK") {
-    color = "good";
+    color = colors.good;
   }
 
   // Add all of the values from the event message to the Discord message description
@@ -438,15 +443,18 @@ const handleCatchAll = event => {
   }
 
   const discordMessage = {
-    text: "*" + subject + "*",
-    attachments: [
+    content: `**${subject}**`,
+    embeds: [
       {
-        color: color,
+        color,
         fields: [
-          { title: "Message", value: record.Sns.Subject, short: false },
-          { title: "Description", value: description, short: false }
+          {
+            name: "Description",
+            value: description.substring(0, 1024),
+            inline: true
+          }
         ],
-        ts: timestamp
+        timestamp
       }
     ]
   };
@@ -473,7 +481,7 @@ const processEvent = (event, context) => {
     eventSnsMessageRaw.indexOf(config.services.codepipeline.match_text) > -1
   ) {
     console.log("processing codepipeline notification");
-    discordMessage = handleCodePipeline(event, context);
+    discordMessage = handleCodePipeline(event);
   } else if (
     eventSubscriptionArn.indexOf(config.services.elasticbeanstalk.match_text) >
       -1 ||
@@ -481,44 +489,45 @@ const processEvent = (event, context) => {
     eventSnsMessageRaw.indexOf(config.services.elasticbeanstalk.match_text) > -1
   ) {
     console.log("processing elasticbeanstalk notification");
-    discordMessage = handleElasticBeanstalk(event, context);
+    discordMessage = handleElasticBeanstalk(event);
   } else if (
     eventSnsMessage &&
     "AlarmName" in eventSnsMessage &&
     "AlarmDescription" in eventSnsMessage
   ) {
     console.log("processing cloudwatch notification");
-    discordMessage = handleCloudWatch(event, context);
+    discordMessage = handleCloudWatch(event);
   } else if (
     eventSnsMessage &&
     "source" in eventSnsMessage &&
     eventSnsMessage.source === "aws.ecs"
   ) {
     console.log("processing cloudwatch ECS event notification");
-    discordMessage = handleCloudWatchEventECS(event, context);
+    discordMessage = handleCloudWatchEventECS(event);
   } else if (
     eventSubscriptionArn.indexOf(config.services.codedeploy.match_text) > -1 ||
     eventSnsSubject.indexOf(config.services.codedeploy.match_text) > -1 ||
     eventSnsMessageRaw.indexOf(config.services.codedeploy.match_text) > -1
   ) {
     console.log("processing codedeploy notification");
-    discordMessage = handleCodeDeploy(event, context);
+    discordMessage = handleCodeDeploy(event);
   } else if (
     eventSubscriptionArn.indexOf(config.services.elasticache.match_text) > -1 ||
     eventSnsSubject.indexOf(config.services.elasticache.match_text) > -1 ||
     eventSnsMessageRaw.indexOf(config.services.elasticache.match_text) > -1
   ) {
     console.log("processing elasticache notification");
-    discordMessage = handleElasticache(event, context);
+    discordMessage = handleElasticache(event);
   } else if (
     eventSubscriptionArn.indexOf(config.services.autoscaling.match_text) > -1 ||
     eventSnsSubject.indexOf(config.services.autoscaling.match_text) > -1 ||
     eventSnsMessageRaw.indexOf(config.services.autoscaling.match_text) > -1
   ) {
     console.log("processing autoscaling notification");
-    discordMessage = handleAutoScaling(event, context);
+    discordMessage = handleAutoScaling(event);
   } else {
-    discordMessage = handleCatchAll(event, context);
+    console.log("processing catch all notification");
+    discordMessage = handleCatchAll(event);
   }
 
   postMessage(discordMessage, response => {
