@@ -223,6 +223,7 @@ const handleCodePipeline = event => {
   }
 
   const discordMessage = {
+    username: "Code Pipeline",
     content: `**${subject}**`,
     embeds: [
       {
@@ -250,6 +251,7 @@ const handleElasticache = event => {
     break;
   }
   const discordMessage = {
+    username: "Elasticache",
     content: `**${subject}**`,
     embeds: [
       {
@@ -305,6 +307,7 @@ const handleCloudWatchEventECS = event => {
     }
 
     const discordMessage = {
+      username: "Amazon ECS",
       content: `**${subject}**`,
       embeds: [
         {
@@ -342,6 +345,7 @@ const handleCloudWatch = event => {
   }
 
   const discordMessage = {
+    username: "CloudWatch",
     content: `**${subject}**`,
     embeds: [
       {
@@ -397,6 +401,7 @@ const handleAutoScaling = event => {
     break;
   }
   const discordMessage = {
+    username: "Auto Scaling",
     content: `**${subject}**`,
     embeds: [
       {
@@ -443,6 +448,7 @@ const handleCatchAll = event => {
   }
 
   const discordMessage = {
+    username: "CloudWatch",
     content: `**${subject}**`,
     embeds: [
       {
