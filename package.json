@@ -6,7 +6,8 @@
     "Christopher Reichert <creichert07@gmail.com>",
     "Cody Reichert <codyreichert@gmail.com>",
     "Alexandr Promakh <s-promakh@ya.ru>",
-    "Ramil Amerzyanov <ramilexe@gmail.com>"
+    "Ramil Amerzyanov <ramilexe@gmail.com>",
+    "GR8 <gr8@botbind.com>"
   ],
   "config": {
     "progress": "true"
@@ -14,7 +15,6 @@
   "dependencies": {
     "aws-sdk": "^2.4.0",
     "https": "^1.0.0",
-    "lodash": "^4.15.0",
     "url": "^0.11.0"
   },
   "devDependencies": {
@@ -22,19 +22,19 @@
   },
   "keywords": [
     "aws",
-    "slack",
+    "discord",
     "lambda",
-    "slackbot",
+    "discordbot",
     "cloudwatch",
     "notifications"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/assertible/lambda-cloudwatch-slack.git"
+    "url": "https://github.com/gr8z/lambda-cloudwatch-discord.git"
   },
   "scripts": {
-    "deploy": "./scripts/deploy.sh",
-    "test": "./scripts/test.sh"
+    "deploy": "bash ./scripts/deploy.sh",
+    "test": "bash ./scripts/test.sh"
   }
 }
